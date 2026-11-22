@@ -1,0 +1,6 @@
+{
+  "name": "Pro Camera RAW",
+  "description": "Aplikasi kamera manual profesional dengan kontrol Shutter Speed, ISO, Manual Focus, Focus Peaking, RAW DNG, dan Live Histogram.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
