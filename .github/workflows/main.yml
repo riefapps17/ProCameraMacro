@@ -29,15 +29,22 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: 3. Set up Android SDK & Accept Licenses
-        uses: android-actions/setup-android@v3
-
-      - name: 4. Install Android SDK Platform 36 & Build-Tools
+      - name: 3. Configure Android SDK Licenses & Platform 36
         run: |
-          yes | sdkmanager --licenses > /dev/null || true
-          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" || sdkmanager "platforms;android-36"
+          # Runner ubuntu-latest sudah memiliki Android SDK bawaan di $ANDROID_HOME
+          export ANDROID_SDK_ROOT="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          mkdir -p "$ANDROID_SDK_ROOT/licenses"
+          printf "\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_SDK_ROOT/licenses/android-sdk-license"
+          printf "\n84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_SDK_ROOT/licenses/android-sdk-preview-license"
 
-      - name: 5. Prepare Signing Keystore & Environment Config
+          # Gunakan sdkmanager bawaan runner tanpa meminta paket 'tools' yang sudah usang
+          SDKMANAGER=$(find "$ANDROID_SDK_ROOT/cmdline-tools" -name "sdkmanager" | sort -V | tail -n 1)
+          if [ -n "$SDKMANAGER" ]; then
+            yes | "$SDKMANAGER" --licenses > /dev/null || true
+            "$SDKMANAGER" "platform-tools" "platforms;android-36" "build-tools;35.0.0" || true
+          fi
+
+      - name: 4. Prepare Signing Keystore & Environment Config
         run: |
           # Restore debug.keystore from debug.keystore.base64 if available, otherwise generate standard debug.keystore
           if [ -f "debug.keystore.base64" ]; then
@@ -56,21 +63,21 @@ jobs:
             touch .env
           fi
 
-      - name: 6. Set up Gradle 9.3.1
+      - name: 5. Set up Gradle 9.3.1
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.3.1'
 
-      - name: 7. Build Debug APK (ProCamera RAW & Macro)
+      - name: 6. Build Debug APK (ProCamera RAW & Macro)
         run: |
           gradle assembleDebug --no-daemon --stacktrace
 
-      - name: 8. Rename Output APK
+      - name: 7. Rename Output APK
         run: |
           cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/ProCamera-RAW-Macro-Debug.apk
           ls -lh app/build/outputs/apk/debug/
 
-      - name: 9. Upload APK Artifact to GitHub Actions
+      - name: 8. Upload APK Artifact to GitHub Actions
         uses: actions/upload-artifact@v4
         with:
           name: ProCamera-RAW-Macro-APK
